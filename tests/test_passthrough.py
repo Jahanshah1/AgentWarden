@@ -165,6 +165,16 @@ def test_nonstream_proxy_matches_direct_upstream(
             assert len(traces["traces"]) == 1
             assert traces["traces"][0]["tools_offered"] == ["read_file"]
 
+            sessions = (await proxy_client.get("/sessions")).json()
+            assert sessions["sessions"] == [
+                {
+                    "session_id": "nonstream-session",
+                    "last_seen": sessions["sessions"][0]["last_seen"],
+                    "request_count": 1,
+                    "tokens_saved": 0,
+                }
+            ]
+
     asyncio.run(run())
 
 
@@ -251,6 +261,47 @@ def test_upstream_errors_pass_through_unchanged(
             assert proxied.content == direct.content
             assert proxied.headers["content-type"] == direct.headers["content-type"]
             assert proxied.headers["x-request-id"] == direct.headers["x-request-id"]
+
+    asyncio.run(run())
+
+
+def test_runtime_config_can_be_updated_without_restarting_proxy(
+    tmp_path: Any, fake_openai: FastAPI
+) -> None:
+    async def run() -> None:
+        proxy_app = create_app(
+            settings=Settings(
+                upstream_base_url="http://fake-openai",
+                database_path=tmp_path / "traces.sqlite3",
+            ),
+            transport=httpx.ASGITransport(app=fake_openai),
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=proxy_app), base_url="http://agentwarden"
+        ) as proxy_client:
+            initial = (await proxy_client.get("/config")).json()
+            updated = (
+                await proxy_client.put(
+                    "/config",
+                    json={
+                        "tool_prune": True,
+                        "history_trim": True,
+                        "session_budget_usd": 0.03,
+                    },
+                )
+            ).json()
+
+        assert initial["optimizer_flags"]["tool_prune"] is False
+        assert updated == {
+            "optimizer_flags": {
+                "tool_prune": True,
+                "history_trim": True,
+                "context_dedup": False,
+                "cache_order": False,
+            },
+            "session_budget_usd": 0.03,
+            "runtime_only": True,
+        }
 
     asyncio.run(run())
 

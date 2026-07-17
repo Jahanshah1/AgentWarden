@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import json
 import logging
 from time import perf_counter
@@ -63,21 +63,7 @@ def create_app(
         # Observability must not prevent transparent forwarding.
         logger.exception("AgentWarden tracing store is unavailable; forwarding continues")
         app.state.trace_store = None
-    app.state.pipeline = OptimizationPipeline(
-        app.state.settings.optimizer_flags,
-        {
-            "cache_order": CacheOrderOptimizer(),
-            "context_dedup": ContextDedupOptimizer(),
-            "history_trim": HistoryTrimOptimizer(
-                keep_last_turns=app.state.settings.history_trim_keep_last_turns,
-                max_tool_tokens=app.state.settings.history_trim_max_tool_tokens,
-            ),
-            "tool_prune": ToolPruneOptimizer(
-                app.state.trace_store,
-                warmup_requests=app.state.settings.tool_prune_warmup_requests,
-            ),
-        },
-    )
+    app.state.pipeline = _build_pipeline(app.state.settings, app.state.trace_store)
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request) -> Response:
@@ -227,12 +213,89 @@ def create_app(
         store = _get_store(app)
         return {"session_id": session_id, "traces": store.list_traces(session_id)}
 
+    @app.get("/sessions")
+    async def sessions(limit: int = Query(default=50, ge=1, le=200)) -> dict[str, Any]:
+        store = _get_store(app)
+        return {"sessions": store.list_sessions(limit)}
+
+    @app.get("/config")
+    async def config() -> dict[str, Any]:
+        return _runtime_config_payload(app.state.settings)
+
+    @app.put("/config")
+    async def update_config(request: Request) -> dict[str, Any]:
+        """Update local optimizer switches for the lifetime of this server process."""
+
+        try:
+            payload = await request.json()
+        except json.JSONDecodeError as error:
+            raise HTTPException(status_code=400, detail="Configuration must be JSON") from error
+        if not isinstance(payload, Mapping):
+            raise HTTPException(status_code=400, detail="Configuration must be an object")
+
+        current = app.state.settings
+        flag_values = {
+            name: payload[name]
+            for name in ("tool_prune", "history_trim", "context_dedup", "cache_order")
+            if name in payload
+        }
+        if any(not isinstance(value, bool) for value in flag_values.values()):
+            raise HTTPException(status_code=400, detail="Optimizer flags must be booleans")
+
+        budget = payload.get("session_budget_usd", current.session_budget_usd)
+        if budget is not None and (
+            not isinstance(budget, (int, float))
+            or isinstance(budget, bool)
+            or budget < 0
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="session_budget_usd must be a non-negative number or null",
+            )
+
+        updated = replace(
+            current,
+            optimizer_flags=replace(current.optimizer_flags, **flag_values),
+            session_budget_usd=float(budget) if budget is not None else None,
+        )
+        app.state.settings = updated
+        app.state.pipeline = _build_pipeline(updated, app.state.trace_store)
+        return _runtime_config_payload(updated)
+
     @app.get("/stats")
     async def stats(session_id: str = Query(default="default")) -> dict[str, Any]:
         store = _get_store(app)
         return store.get_stats(session_id, app.state.settings.model_prices)
 
     return app
+
+
+def _build_pipeline(
+    settings: Settings, trace_store: TraceStore | None
+) -> OptimizationPipeline:
+    return OptimizationPipeline(
+        settings.optimizer_flags,
+        {
+            "cache_order": CacheOrderOptimizer(),
+            "context_dedup": ContextDedupOptimizer(),
+            "history_trim": HistoryTrimOptimizer(
+                keep_last_turns=settings.history_trim_keep_last_turns,
+                max_tool_tokens=settings.history_trim_max_tool_tokens,
+            ),
+            "tool_prune": ToolPruneOptimizer(
+                trace_store,
+                warmup_requests=settings.tool_prune_warmup_requests,
+            ),
+        },
+    )
+
+
+def _runtime_config_payload(settings: Settings) -> dict[str, Any]:
+    return {
+        "optimizer_flags": asdict(settings.optimizer_flags),
+        "session_budget_usd": settings.session_budget_usd,
+        "runtime_only": True,
+    }
 
 
 app = create_app()

@@ -5,6 +5,8 @@ __pycache__/
 build/
 dist/
 *.whl
+dashboard/node_modules/
+dashboard/.next/
 .pytest_cache/
 agentwarden.sqlite3
 *.sqlite3

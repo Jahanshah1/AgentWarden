@@ -7,3 +7,5 @@
 - Day 3: budget_guard warns from the earliest deterministic signal available for both normal and streaming requests: prior session spend plus the current request's input-token estimate.
 - Day 4: the demo repository lives outside the main `tests/` path so it can stay intentionally broken while AgentWarden's own test suite remains green.
 - Day 4: replay verification launches two isolated local proxy processes with different optimizer flags so "off" and "on" runs compare the same task against fresh workspaces.
+2026-07-18: The dashboard discovers local runs through a read-only `/sessions` endpoint rather than requiring users to paste session IDs.
+2026-07-18: Dashboard configuration changes affect only the currently running local proxy; environment variables remain the durable configuration source.

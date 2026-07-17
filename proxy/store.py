@@ -114,6 +114,26 @@ class TraceStore:
             ).fetchall()
         return [self._deserialize_row(row) for row in rows]
 
+    def list_sessions(self, limit: int = 50) -> list[dict[str, Any]]:
+        """Return recent sessions for the local dashboard selector."""
+
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                    session_id,
+                    MAX(ts) AS last_seen,
+                    COUNT(*) AS request_count,
+                    COALESCE(SUM(tokens_saved), 0) AS tokens_saved
+                FROM traces
+                GROUP BY session_id
+                ORDER BY last_seen DESC
+                LIMIT ?
+                """,
+                (max(1, limit),),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def count_requests(self, session_id: str) -> int:
         with self._connect() as connection:
             row = connection.execute(

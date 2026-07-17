@@ -149,6 +149,23 @@ All flags default to `false`, preserving byte-identical pass-through.
 | `AGENTWARDEN_SESSION_BUDGET_USD` | Adds a warning response header after the projected session cost crosses this amount. |
 | `AGENTWARDEN_DB_PATH` | SQLite trace database location; defaults to `agentwarden.sqlite3`. |
 
+## Dashboard
+
+The local dashboard reads sessions, trace receipts, and runtime configuration
+from the running proxy. Start the proxy first, then in a second terminal:
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). The dashboard can select
+any recorded session, show before/after input context, inspect every request,
+and change optimizer flags or the budget-warning threshold for the currently
+running proxy. Runtime changes take effect immediately but reset when the proxy
+is restarted; use environment variables for durable defaults.
+
 ## Current status
 
 This is a working hackathon prototype, not a hosted multi-tenant service. It
