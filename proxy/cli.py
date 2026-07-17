@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 
+import httpx
 import uvicorn
 
 from demo_agent.agent import DEFAULT_MODEL, run_demo_task
@@ -26,6 +27,15 @@ def main() -> int:
     stats = subparsers.add_parser("stats", help="Print stored session stats")
     stats.add_argument("--session-id", default="default")
     stats.add_argument("--db", default=os.environ.get("AGENTWARDEN_DB_PATH", "agentwarden.sqlite3"))
+
+    doctor = subparsers.add_parser(
+        "doctor", help="Check that a running AgentWarden proxy is reachable"
+    )
+    doctor.add_argument(
+        "--base-url",
+        default=os.environ.get("AGENTWARDEN_BASE_URL", "http://127.0.0.1:8080/v1"),
+        help="The OpenAI SDK base URL configured for the agent",
+    )
 
     demo = subparsers.add_parser("demo", help="Run the demo coding agent through a proxy")
     demo.add_argument("--base-url", default=os.environ.get("AGENTWARDEN_BASE_URL", "http://127.0.0.1:8080/v1"))
@@ -47,6 +57,8 @@ def main() -> int:
         store = TraceStore(Path(args.db))
         print(json.dumps(store.get_stats(args.session_id, settings.model_prices), indent=2))
         return 0
+    if args.command == "doctor":
+        return _doctor(args.base_url)
     if args.command == "demo":
         api_key = _require_api_key()
         result = run_demo_task(
@@ -76,6 +88,26 @@ def _require_api_key() -> str:
     if not api_key:
         raise SystemExit("OPENAI_API_KEY is required")
     return api_key
+
+
+def _doctor(base_url: str) -> int:
+    """Confirm that the local proxy exposes its observability endpoint."""
+
+    proxy_root = base_url.rstrip("/").removesuffix("/v1")
+    try:
+        response = httpx.get(f"{proxy_root}/stats", timeout=2.0)
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        print(
+            f"AgentWarden is not reachable at {proxy_root}. "
+            "Start it with: agentwarden serve"
+        )
+        print(f"Details: {error}")
+        return 1
+
+    print(f"AgentWarden is ready at {proxy_root}.")
+    print(f"SDK base_url: {proxy_root}/v1")
+    return 0
 
 
 if __name__ == "__main__":

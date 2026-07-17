@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "agentwarden"
 version = "0.1.0"
 description = "A transparent OpenAI-compatible proxy for agent token tracing."
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115,<1",

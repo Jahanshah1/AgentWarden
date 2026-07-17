@@ -77,6 +77,7 @@ def run_demo_task(
             model=model,
             messages=messages,
             tools=DemoToolbox.openai_tools(),
+            reasoning_effort="none",
             extra_headers={"X-AgentWarden-Session": session},
         )
         message = completion.choices[0].message
