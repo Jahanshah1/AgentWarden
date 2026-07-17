@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
 import os
 from typing import Any
@@ -61,6 +62,38 @@ def fake_openai() -> FastAPI:
                 status_code=429,
                 media_type="application/json",
                 headers={"x-request-id": "req_error"},
+            )
+        if payload["model"] == "compressed-model":
+            body = {
+                "id": "chatcmpl_fake_compressed",
+                "object": "chat.completion",
+                "model": "compressed-model",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [
+                                {
+                                    "id": "call_compressed",
+                                    "type": "function",
+                                    "function": {
+                                        "name": "read_file",
+                                        "arguments": '{"path":"README.md"}',
+                                    },
+                                }
+                            ],
+                        },
+                        "finish_reason": "tool_calls",
+                    }
+                ],
+                "usage": {"prompt_tokens": 20, "completion_tokens": 7, "total_tokens": 27},
+            }
+            return Response(
+                content=gzip.compress(json.dumps(body).encode("utf-8")),
+                media_type="application/json",
+                headers={"content-encoding": "gzip"},
             )
         if payload.get("stream") is True:
 
@@ -218,6 +251,38 @@ def test_upstream_errors_pass_through_unchanged(
             assert proxied.content == direct.content
             assert proxied.headers["content-type"] == direct.headers["content-type"]
             assert proxied.headers["x-request-id"] == direct.headers["x-request-id"]
+
+    asyncio.run(run())
+
+
+def test_compressed_upstream_response_is_decoded_for_trace_accounting(
+    tmp_path: Any, fake_openai: FastAPI
+) -> None:
+    payload = _request_payload(stream=False)
+    payload["model"] = "compressed-model"
+
+    async def run() -> None:
+        proxy_app = create_app(
+            settings=Settings(
+                upstream_base_url="http://fake-openai",
+                database_path=tmp_path / "traces.sqlite3",
+            ),
+            transport=httpx.ASGITransport(app=fake_openai),
+        )
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=proxy_app), base_url="http://agentwarden"
+        ) as proxy_client:
+            response = await proxy_client.post(
+                "/v1/chat/completions",
+                content=_raw_json(payload),
+                headers=_headers("compressed-session"),
+            )
+            assert response.status_code == 200
+            stats = (await proxy_client.get("/stats?session_id=compressed-session")).json()
+            traces = (await proxy_client.get("/traces?session_id=compressed-session")).json()
+
+        assert stats["totals"]["tokens_output"] == 7
+        assert traces["traces"][0]["tools_called"] == ["read_file"]
 
     asyncio.run(run())
 

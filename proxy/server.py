@@ -199,7 +199,11 @@ def create_app(
             await upstream_client.aclose()
 
         output = (
-            _safe_analyze_response(raw_response_body, forwarded_analysis.model)
+            _safe_analyze_response(
+                raw_response_body,
+                forwarded_analysis.model,
+                upstream_response.headers,
+            )
             if upstream_response.is_success
             else OutputAnalysis(tokens_output=0, tools_called=())
         )
@@ -289,8 +293,26 @@ def _safe_analyze_request(payload: Mapping[str, Any]) -> RequestAnalysis:
         )
 
 
-def _safe_analyze_response(body: bytes, model: str) -> OutputAnalysis:
-    payload = _parse_json_object(body)
+def _safe_analyze_response(
+    body: bytes,
+    model: str,
+    headers: Mapping[str, str] | None = None,
+) -> OutputAnalysis:
+    """Analyze a decoded copy while preserving the upstream body for the client."""
+
+    decoded_body = body
+    if headers is not None and headers.get("content-encoding"):
+        try:
+            decoded_response = httpx.Response(
+                status_code=200,
+                headers=headers,
+                content=body,
+            )
+            decoded_body = decoded_response.read()
+        except Exception:
+            logger.exception("Unable to decode upstream response for tracing")
+
+    payload = _parse_json_object(decoded_body)
     if not payload:
         return OutputAnalysis(tokens_output=0, tools_called=())
     try:
