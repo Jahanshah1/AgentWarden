@@ -20,7 +20,12 @@ from proxy.analyzer import (
     analyze_request,
 )
 from proxy.config import Settings
-from proxy.optimizers import ToolPruneOptimizer
+from proxy.optimizers import (
+    CacheOrderOptimizer,
+    ContextDedupOptimizer,
+    HistoryTrimOptimizer,
+    ToolPruneOptimizer,
+)
 from proxy.pipeline import OptimizationPipeline
 from proxy.store import TraceRecord, TraceStore
 
@@ -61,10 +66,16 @@ def create_app(
     app.state.pipeline = OptimizationPipeline(
         app.state.settings.optimizer_flags,
         {
+            "cache_order": CacheOrderOptimizer(),
+            "context_dedup": ContextDedupOptimizer(),
+            "history_trim": HistoryTrimOptimizer(
+                keep_last_turns=app.state.settings.history_trim_keep_last_turns,
+                max_tool_tokens=app.state.settings.history_trim_max_tool_tokens,
+            ),
             "tool_prune": ToolPruneOptimizer(
                 app.state.trace_store,
                 warmup_requests=app.state.settings.tool_prune_warmup_requests,
-            )
+            ),
         },
     )
 
@@ -138,6 +149,13 @@ def create_app(
 
         is_streaming_request = request_payload.get("stream") is True
         response_headers = _forward_response_headers(upstream_response)
+        budget_warning = _budget_warning_header(
+            app,
+            session_id,
+            forwarded_analysis,
+        )
+        if budget_warning is not None:
+            response_headers["X-AgentWarden-Budget-Warning"] = budget_warning
         if is_streaming_request and upstream_response.is_success:
             observer = StreamTraceObserver(forwarded_analysis.model)
 
@@ -316,8 +334,45 @@ def _persist_trace(
         logger.exception("Failed to persist trace; proxied response was unaffected")
 
 
+def _budget_warning_header(
+    app: FastAPI,
+    session_id: str,
+    request_analysis: RequestAnalysis,
+) -> str | None:
+    budget = app.state.settings.session_budget_usd
+    store = app.state.trace_store
+    if budget is None or store is None:
+        return None
+
+    prior_estimate = store.get_stats(session_id, app.state.settings.model_prices)[
+        "cost_estimate_usd"
+    ]
+    projected = prior_estimate + _estimated_input_cost(
+        request_analysis.model,
+        request_analysis.tokens_total_input,
+        app.state.settings,
+    )
+    if projected < budget:
+        return None
+
+    logger.warning(
+        "Session %s crossed the AgentWarden budget threshold: projected cost %.6f >= %.6f",
+        session_id,
+        projected,
+        budget,
+    )
+    return f"projected session cost {projected:.6f} exceeds budget {budget:.6f}"
+
+
 def _get_store(app: FastAPI) -> TraceStore:
     store = app.state.trace_store
     if store is None:
         raise HTTPException(status_code=503, detail="Trace storage is unavailable")
     return store
+
+
+def _estimated_input_cost(model: str, input_tokens: int, settings: Settings) -> float:
+    price = settings.price_for(model)
+    if price is None:
+        return 0.0
+    return (input_tokens * price.input_per_million) / 1_000_000

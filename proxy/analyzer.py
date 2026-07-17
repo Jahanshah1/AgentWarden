@@ -292,11 +292,20 @@ def count_json(value: Any, model: str) -> int:
 def count_text(text: str, model: str) -> int:
     """Count text without rejecting special-token-like user content."""
 
-    try:
-        encoding = tiktoken.encoding_for_model(model)
-    except KeyError:
-        encoding = tiktoken.get_encoding("o200k_base")
+    encoding = _encoding_for_model(model)
     return len(encoding.encode(text, disallowed_special=()))
+
+
+def trim_text_to_tokens(text: str, model: str, max_tokens: int) -> str:
+    """Return a prefix of text that fits in max_tokens under the model encoding."""
+
+    if max_tokens <= 0:
+        return ""
+    encoding = _encoding_for_model(model)
+    tokens = encoding.encode(text, disallowed_special=())
+    if len(tokens) <= max_tokens:
+        return text
+    return encoding.decode(tokens[:max_tokens])
 
 
 def extract_tool_names(tools: list[Any]) -> list[str]:
@@ -342,3 +351,10 @@ def _unique_in_order(values: list[str] | Any) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
+
+
+def _encoding_for_model(model: str) -> tiktoken.Encoding:
+    try:
+        return tiktoken.encoding_for_model(model)
+    except KeyError:
+        return tiktoken.get_encoding("o200k_base")

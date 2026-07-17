@@ -64,6 +64,9 @@ class Settings:
     request_timeout_seconds: float = 120.0
     optimizer_flags: OptimizerFlags = field(default_factory=OptimizerFlags)
     tool_prune_warmup_requests: int = 3
+    history_trim_keep_last_turns: int = 5
+    history_trim_max_tool_tokens: int = 300
+    session_budget_usd: float | None = None
     model_prices: Mapping[str, ModelPrice] = field(
         default_factory=lambda: dict(DEFAULT_MODEL_PRICES)
     )
@@ -86,6 +89,13 @@ class Settings:
             tool_prune_warmup_requests=_env_int(
                 "AGENTWARDEN_TOOL_PRUNE_WARMUP_REQUESTS", default=3
             ),
+            history_trim_keep_last_turns=_env_int(
+                "AGENTWARDEN_HISTORY_TRIM_KEEP_LAST_TURNS", default=5
+            ),
+            history_trim_max_tool_tokens=_env_int(
+                "AGENTWARDEN_HISTORY_TRIM_MAX_TOOL_TOKENS", default=300
+            ),
+            session_budget_usd=_env_float("AGENTWARDEN_SESSION_BUDGET_USD"),
         )
 
     def price_for(self, model: str) -> ModelPrice | None:
@@ -115,3 +125,13 @@ def _env_int(name: str, default: int) -> int:
         return int(value)
     except ValueError:
         return default
+
+
+def _env_float(name: str) -> float | None:
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None

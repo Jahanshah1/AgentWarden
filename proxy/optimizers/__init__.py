@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Protocol
 
+from proxy.optimizers.cache_order import CacheOrderOptimizer
+from proxy.optimizers.context_dedup import ContextDedupOptimizer
+from proxy.optimizers.history_trim import HistoryTrimOptimizer
 from proxy.optimizers.tool_prune import ToolPruneOptimizer
 
 
@@ -20,4 +23,10 @@ class Optimizer(Protocol):
         """Return an optimized request or raise for pipeline fallback."""
 
 
-__all__ = ["Optimizer", "ToolPruneOptimizer"]
+__all__ = [
+    "CacheOrderOptimizer",
+    "ContextDedupOptimizer",
+    "HistoryTrimOptimizer",
+    "Optimizer",
+    "ToolPruneOptimizer",
+]
