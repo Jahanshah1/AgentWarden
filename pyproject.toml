@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentwarden"
+name = "agentwarden-ai"
 version = "0.1.0"
 description = "A local OpenAI-compatible proxy that reduces agent context waste and proves behavior held."
 readme = "README.md"

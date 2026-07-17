@@ -29,10 +29,17 @@ Requirements: Python 3.11+ and an OpenAI API key. Your key stays in your
 application process and is forwarded directly to OpenAI; AgentWarden does not
 persist it.
 
-Install directly from this repository:
+Install from PyPI:
 
 ```bash
 python3.11 -m venv .venv
+.venv/bin/pip install agentwarden-ai
+```
+
+Until the first PyPI release is published, install the current GitHub version
+instead:
+
+```bash
 .venv/bin/pip install "git+https://github.com/Jahanshah1/AgentWarden.git"
 ```
 

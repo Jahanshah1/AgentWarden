@@ -2,15 +2,14 @@
 
 This repository publishes two separate things:
 
-- The `agentwarden` Python package on PyPI. It includes the proxy, CLI, and
+- The `agentwarden-ai` Python package on PyPI. It includes the proxy, CLI, and
   bundled local dashboard.
 - The public `site/` Next.js project on Vercel. It is a marketing and
   documentation site; it does not host anyone's local proxy or traces.
 
 ## One-time PyPI setup
 
-1. Confirm that `agentwarden` is available as a PyPI project name. If it is
-   already taken, change `[project].name` in `pyproject.toml` before publishing.
+1. Confirm that `agentwarden-ai` is available as a PyPI project name.
 2. On PyPI, add a Trusted Publisher for GitHub Actions:
    - Owner: `Jahanshah1`
    - Repository: `AgentWarden`
@@ -54,7 +53,7 @@ In a clean virtual environment, install from TestPyPI and confirm the CLI:
 python3.11 -m venv /tmp/agentwarden-release-check
 /tmp/agentwarden-release-check/bin/pip install \
   --index-url https://test.pypi.org/simple/ \
-  --extra-index-url https://pypi.org/simple/ agentwarden
+  --extra-index-url https://pypi.org/simple/ agentwarden-ai
 /tmp/agentwarden-release-check/bin/agentwarden --help
 ```
 
