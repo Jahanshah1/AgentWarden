@@ -63,10 +63,18 @@ def _mentioned_tools(request: Mapping[str, Any], tool_names: list[str]) -> set[s
     if not isinstance(messages, list) or not messages:
         return set()
 
-    current_message = messages[-1]
-    if not isinstance(current_message, Mapping):
-        return set()
-    if current_message.get("role") != "user":
+    # Tool-result turns follow the active user request. Keep reading that
+    # request throughout the loop rather than treating a tool result as the
+    # current turn.
+    current_message = next(
+        (
+            message
+            for message in reversed(messages)
+            if isinstance(message, Mapping) and message.get("role") == "user"
+        ),
+        None,
+    )
+    if current_message is None:
         return set()
 
     current_text = _content_text(current_message.get("content")).lower()

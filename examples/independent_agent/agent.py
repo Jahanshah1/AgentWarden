@@ -121,7 +121,11 @@ def run_support_agent(
         },
         {
             "role": "user",
-            "content": "Resolve support ticket SUP-1042 for the customer.",
+            "content": (
+                "Resolve support ticket SUP-1042 for the customer. You may use only "
+                "get_ticket, get_customer_plan, search_knowledge_base, "
+                "get_recent_incidents, and get_escalation_policy."
+            ),
         },
     ]
     tool_calls: list[str] = []

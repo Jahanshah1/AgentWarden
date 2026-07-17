@@ -136,6 +136,47 @@ def test_tool_prune_keeps_tools_named_in_the_current_user_message(
     asyncio.run(run())
 
 
+def test_tool_prune_uses_the_active_user_request_after_tool_messages(
+    tmp_path: Any,
+) -> None:
+    payload = _request_payload("Use write_file after read_file to save the fix.")
+    payload["messages"].append(
+        {"role": "tool", "tool_call_id": "call_1", "content": "Read result"}
+    )
+    upstream = _capture_upstream()
+
+    async def run() -> None:
+        proxy_app = create_app(
+            settings=Settings(
+                upstream_base_url="http://fake-openai",
+                database_path=tmp_path / "traces.sqlite3",
+                optimizer_flags=OptimizerFlags(tool_prune=True),
+            ),
+            transport=httpx.ASGITransport(app=upstream),
+        )
+        store = TraceStore(tmp_path / "traces.sqlite3")
+        for _ in range(3):
+            _seed_trace(store, "active-user-session", tools_called=("read_file",))
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=proxy_app), base_url="http://agentwarden"
+        ) as proxy_client:
+            response = await proxy_client.post(
+                "/v1/chat/completions",
+                content=_raw_json(payload),
+                headers=_headers("active-user-session"),
+            )
+
+        assert response.status_code == 200
+        forwarded = json.loads(upstream.state.last_body)
+        assert [tool["function"]["name"] for tool in forwarded["tools"]] == [
+            "read_file",
+            "write_file",
+        ]
+
+    asyncio.run(run())
+
+
 def _capture_upstream() -> FastAPI:
     app = FastAPI()
     app.state.last_body = b""
