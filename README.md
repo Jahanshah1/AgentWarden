@@ -127,6 +127,9 @@ To run the complete coding-agent demo and then inspect its receipt:
 .venv/bin/agentwarden stats --session-id demo-REPLACE_ME
 ```
 
+For a separate consumer-agent proof that imports only the OpenAI SDK, run the
+[independent support-agent example](examples/independent_agent/README.md).
+
 To compare the same demo task with optimizations off and on:
 
 ```bash
