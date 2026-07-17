@@ -15,6 +15,9 @@ dependencies = [
     "uvicorn[standard]>=0.30,<1",
 ]
 
+[project.scripts]
+agentwarden = "proxy.cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest>=8,<9"]
 
@@ -25,3 +28,6 @@ pythonpath = ["."]
 markers = [
     "live: calls the real OpenAI API and requires OPENAI_API_KEY",
 ]
+
+[tool.setuptools.packages.find]
+include = ["proxy*", "demo_agent*", "replay*"]

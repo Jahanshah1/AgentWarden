@@ -6,3 +6,4 @@
 - Day 3: history_trim only clips older tool-role content, while context_dedup skips the current turn and tool-call-bearing assistant messages to keep behavior risk low.
 - Day 3: budget_guard warns from the earliest deterministic signal available for both normal and streaming requests: prior session spend plus the current request's input-token estimate.
 - Day 4: the demo repository lives outside the main `tests/` path so it can stay intentionally broken while AgentWarden's own test suite remains green.
+- Day 4: replay verification launches two isolated local proxy processes with different optimizer flags so "off" and "on" runs compare the same task against fresh workspaces.

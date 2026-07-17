@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -71,6 +72,40 @@ class DemoToolbox:
         if completed.stderr.strip() and completed.stdout.strip():
             output = f"{completed.stdout.strip()}\n{completed.stderr.strip()}"
         return ToolResult(completed.returncode == 0, output)
+
+    def execute(self, name: str, arguments: str) -> ToolResult:
+        """Run a named tool from a raw JSON arguments string."""
+
+        try:
+            payload = json.loads(arguments) if arguments else {}
+        except json.JSONDecodeError as error:
+            return ToolResult(False, f"Invalid JSON arguments for {name}: {error}")
+        if not isinstance(payload, dict):
+            return ToolResult(False, f"Tool arguments for {name} must be a JSON object")
+
+        if name == "list_dir":
+            return self.list_dir(str(payload.get("path", ".")))
+        if name == "read_file":
+            path = payload.get("path")
+            if not isinstance(path, str):
+                return ToolResult(False, "read_file requires a string path")
+            return self.read_file(path)
+        if name == "write_file":
+            path = payload.get("path")
+            content = payload.get("content")
+            if not isinstance(path, str) or not isinstance(content, str):
+                return ToolResult(False, "write_file requires string path and content")
+            return self.write_file(path, content)
+        if name == "grep":
+            pattern = payload.get("pattern")
+            if not isinstance(pattern, str):
+                return ToolResult(False, "grep requires a string pattern")
+            return self.grep(pattern)
+        if name == "run_tests":
+            return self.run_tests()
+        if name in DECOY_TOOLS:
+            return ToolResult(False, f"{name} is unavailable in the local demo environment")
+        return ToolResult(False, f"Unknown tool: {name}")
 
     @classmethod
     def openai_tools(cls) -> list[dict[str, Any]]:

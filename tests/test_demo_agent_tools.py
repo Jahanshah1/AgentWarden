@@ -25,3 +25,11 @@ def test_read_file_and_list_dir_are_scoped_to_sample_repo() -> None:
     toolbox = DemoToolbox(SAMPLE_REPO)
     assert "app.py" in toolbox.list_dir(".").output
     assert "build_release_summary" in toolbox.read_file("app.py").output
+
+
+def test_execute_routes_arguments_and_rejects_decoy_tools() -> None:
+    toolbox = DemoToolbox(SAMPLE_REPO)
+    assert "inventory.py" in toolbox.execute("list_dir", '{"path":"."}').output
+    decoy = toolbox.execute("open_browser", "{}")
+    assert decoy.ok is False
+    assert "unavailable" in decoy.output
