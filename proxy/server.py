@@ -5,11 +5,14 @@ from __future__ import annotations
 from dataclasses import asdict, replace
 import json
 import logging
+from pathlib import Path
 from time import perf_counter
 from typing import Any, AsyncIterator, Mapping
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 import httpx
 
 from proxy.analyzer import (
@@ -55,6 +58,12 @@ def create_app(
     """Build an app, optionally with an in-memory upstream transport for tests."""
 
     app = FastAPI(title="AgentWarden", version="0.1.0")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+        allow_methods=["GET", "PUT"],
+        allow_headers=["content-type"],
+    )
     app.state.settings = settings or Settings.from_environment()
     app.state.upstream_transport = transport
     try:
@@ -266,6 +275,14 @@ def create_app(
     async def stats(session_id: str = Query(default="default")) -> dict[str, Any]:
         store = _get_store(app)
         return store.get_stats(session_id, app.state.settings.model_prices)
+
+    dashboard_directory = Path(__file__).with_name("dashboard_static")
+    if dashboard_directory.is_dir():
+        app.mount(
+            "/dashboard",
+            StaticFiles(directory=dashboard_directory, html=True),
+            name="dashboard",
+        )
 
     return app
 

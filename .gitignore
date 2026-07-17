@@ -7,6 +7,9 @@ dist/
 *.whl
 dashboard/node_modules/
 dashboard/.next/
+dashboard/out/
+site/node_modules/
+site/.next/
 .pytest_cache/
 agentwarden.sqlite3
 *.sqlite3

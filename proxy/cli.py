@@ -24,6 +24,12 @@ def main() -> int:
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8080)
 
+    dashboard = subparsers.add_parser(
+        "dashboard", help="Run the local proxy and show its bundled dashboard URL"
+    )
+    dashboard.add_argument("--host", default="127.0.0.1")
+    dashboard.add_argument("--port", type=int, default=8080)
+
     stats = subparsers.add_parser("stats", help="Print stored session stats")
     stats.add_argument("--session-id", default="default")
     stats.add_argument("--db", default=os.environ.get("AGENTWARDEN_DB_PATH", "agentwarden.sqlite3"))
@@ -50,6 +56,10 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.command == "serve":
+        uvicorn.run("proxy.server:app", host=args.host, port=args.port)
+        return 0
+    if args.command == "dashboard":
+        print(f"Dashboard: http://{args.host}:{args.port}/dashboard")
         uvicorn.run("proxy.server:app", host=args.host, port=args.port)
         return 0
     if args.command == "stats":

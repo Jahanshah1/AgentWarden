@@ -1,11 +1,10 @@
 {
-  "name": "agentwarden-dashboard",
+  "name": "agentwarden-site",
   "private": true,
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "package": "node scripts/package-static.mjs",
     "start": "next start"
   },
   "dependencies": {

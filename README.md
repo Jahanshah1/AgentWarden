@@ -151,20 +151,19 @@ All flags default to `false`, preserving byte-identical pass-through.
 
 ## Dashboard
 
-The local dashboard reads sessions, trace receipts, and runtime configuration
-from the running proxy. Start the proxy first, then in a second terminal:
+The dashboard is bundled with the Python package. No Node.js or separate
+frontend server is needed. Start it with:
 
 ```bash
-cd dashboard
-npm install
-npm run dev
+agentwarden dashboard
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The dashboard can select
-any recorded session, show before/after input context, inspect every request,
-and change optimizer flags or the budget-warning threshold for the currently
-running proxy. Runtime changes take effect immediately but reset when the proxy
-is restarted; use environment variables for durable defaults.
+Open [http://127.0.0.1:8080/dashboard](http://127.0.0.1:8080/dashboard). The
+dashboard can select any recorded session, show before/after input context,
+inspect every request, and change optimizer flags or the budget-warning
+threshold for the currently-running proxy. Runtime changes take effect
+immediately but reset when the proxy is restarted; use environment variables
+for durable defaults.
 
 ## Current status
 

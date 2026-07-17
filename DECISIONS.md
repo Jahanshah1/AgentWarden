@@ -9,3 +9,4 @@
 - Day 4: replay verification launches two isolated local proxy processes with different optimizer flags so "off" and "on" runs compare the same task against fresh workspaces.
 2026-07-18: The dashboard discovers local runs through a read-only `/sessions` endpoint rather than requiring users to paste session IDs.
 2026-07-18: Dashboard configuration changes affect only the currently running local proxy; environment variables remain the durable configuration source.
+2026-07-18: The public website deploys separately to Vercel; the local dashboard is bundled inside the Python package and served by the proxy at `/dashboard`.

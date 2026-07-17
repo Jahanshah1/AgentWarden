@@ -306,6 +306,20 @@ def test_runtime_config_can_be_updated_without_restarting_proxy(
     asyncio.run(run())
 
 
+def test_bundled_dashboard_is_served_by_the_proxy(tmp_path: Any) -> None:
+    async def run() -> None:
+        proxy_app = create_app(settings=Settings(database_path=tmp_path / "traces.sqlite3"))
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=proxy_app), base_url="http://agentwarden"
+        ) as client:
+            response = await client.get("/dashboard/")
+
+        assert response.status_code == 200
+        assert b"AgentWarden" in response.content
+
+    asyncio.run(run())
+
+
 def test_compressed_upstream_response_is_decoded_for_trace_accounting(
     tmp_path: Any, fake_openai: FastAPI
 ) -> None:

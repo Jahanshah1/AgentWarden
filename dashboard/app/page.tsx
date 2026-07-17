@@ -49,12 +49,32 @@ export default function Dashboard() {
   const load = useCallback(async (sessionId?: string) => {
     setLoading(true);
     try {
-      const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
-      const response = await fetch(`/api/dashboard${query}`, { cache: "no-store" });
-      const next = (await response.json()) as DashboardData;
+      const proxyRoot = process.env.NEXT_PUBLIC_AGENTWARDEN_URL ?? window.location.origin;
+      const sessionsResponse = await fetch(`${proxyRoot}/sessions`, { cache: "no-store" });
+      if (!sessionsResponse.ok) throw new Error("The local proxy is unavailable");
+      const sessionsPayload = (await sessionsResponse.json()) as { sessions: DashboardData["sessions"] };
+      const sessions = sessionsPayload.sessions ?? [];
+      const nextSession = sessionId || sessions[0]?.session_id || "default";
+      const [statsResponse, tracesResponse, configResponse] = await Promise.all([
+        fetch(`${proxyRoot}/stats?session_id=${encodeURIComponent(nextSession)}`, { cache: "no-store" }),
+        fetch(`${proxyRoot}/traces?session_id=${encodeURIComponent(nextSession)}`, { cache: "no-store" }),
+        fetch(`${proxyRoot}/config`, { cache: "no-store" }),
+      ]);
+      if (!statsResponse.ok || !tracesResponse.ok || !configResponse.ok) throw new Error("The local proxy did not return a complete receipt");
+      const next: DashboardData = {
+        source: "live",
+        proxyRoot,
+        sessions,
+        stats: await statsResponse.json(),
+        traces: (await tracesResponse.json()).traces ?? [],
+        config: await configResponse.json(),
+      };
       setData(next);
       setSelectedSession(next.stats.session_id);
       setLastUpdated(new Date());
+    } catch (error) {
+      setData({ ...sampleDashboard, warning: error instanceof Error ? error.message : "Unable to reach AgentWarden" });
+      setSelectedSession(sampleDashboard.stats.session_id);
     } finally {
       setLoading(false);
     }
@@ -205,7 +225,7 @@ function SettingsPanel({ config, source, onSaved }: { config: DashboardData["con
         setMessage("Enter a non-negative budget.");
         return;
       }
-      const response = await fetch("/api/config", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_AGENTWARDEN_URL ?? window.location.origin}/config`, {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...flags, session_budget_usd: parsedBudget }),
@@ -241,3 +261,12 @@ function settingDescription(name: string) {
 function formatNumber(value: number) { return new Intl.NumberFormat("en-US").format(value); }
 function formatCurrency(value: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 4 }).format(value); }
 function formatDuration(value: number) { return `${(value / 1000).toFixed(value >= 10_000 ? 1 : 2)}s`; }
+
+const sampleDashboard: DashboardData = {
+  source: "sample",
+  proxyRoot: "http://127.0.0.1:8080",
+  sessions: [{ session_id: "external-support-demo", last_seen: "", request_count: 6, tokens_saved: 687 }],
+  stats: { session_id: "external-support-demo", request_count: 6, totals: { tokens_total_input: 4474, tokens_output: 211, tokens_total: 4685, tokens_saved: 687, latency_ms: 11840 }, per_segment: { system: 486, tools: 1893, history: 1748, current: 347 }, cost_estimate_usd: 0.01435, models: [{ model: "gpt-5.6-terra" }] },
+  traces: [],
+  config: { optimizer_flags: { tool_prune: true, history_trim: true, context_dedup: true, cache_order: true }, session_budget_usd: 0.02, runtime_only: true },
+};
