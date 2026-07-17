@@ -8,6 +8,7 @@ bytes, preserving byte-identical pass-through behavior.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import logging
 from typing import Any, Mapping
 
@@ -55,9 +56,21 @@ class OptimizationPipeline:
 
             original = current
             try:
-                current = optimizer.apply(current, trace_context)
-                applied.append(name)
+                candidate = optimizer.apply(current, trace_context)
+                if _request_changed(original, candidate):
+                    applied.append(name)
+                current = candidate
             except Exception:
                 logger.exception("Optimizer %s failed; forwarding its original request", name)
                 current = original
         return PipelineResult(request=current, applied=tuple(applied))
+
+
+def _request_changed(original: dict[str, Any], candidate: dict[str, Any]) -> bool:
+    """Include key-order changes, which matter for provider prompt caching."""
+
+    if original != candidate:
+        return True
+    return json.dumps(
+        original, ensure_ascii=False, separators=(",", ":")
+    ) != json.dumps(candidate, ensure_ascii=False, separators=(",", ":"))
