@@ -20,6 +20,7 @@ from proxy.analyzer import (
     analyze_request,
 )
 from proxy.config import Settings
+from proxy.optimizers import ToolPruneOptimizer
 from proxy.pipeline import OptimizationPipeline
 from proxy.store import TraceRecord, TraceStore
 
@@ -51,19 +52,28 @@ def create_app(
     app = FastAPI(title="AgentWarden", version="0.1.0")
     app.state.settings = settings or Settings.from_environment()
     app.state.upstream_transport = transport
-    app.state.pipeline = OptimizationPipeline(app.state.settings.optimizer_flags)
     try:
         app.state.trace_store = TraceStore(app.state.settings.database_path)
     except Exception:
         # Observability must not prevent transparent forwarding.
         logger.exception("AgentWarden tracing store is unavailable; forwarding continues")
         app.state.trace_store = None
+    app.state.pipeline = OptimizationPipeline(
+        app.state.settings.optimizer_flags,
+        {
+            "tool_prune": ToolPruneOptimizer(
+                app.state.trace_store,
+                warmup_requests=app.state.settings.tool_prune_warmup_requests,
+            )
+        },
+    )
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request) -> Response:
         started_at = perf_counter()
         raw_request_body = await request.body()
         request_payload = _parse_json_object(raw_request_body)
+        session_id = request.headers.get("x-agentwarden-session", "default")
         original_analysis = _safe_analyze_request(request_payload)
         forwarded_payload = request_payload
         forwarded_body = raw_request_body
@@ -72,7 +82,10 @@ def create_app(
         if app.state.settings.optimizer_flags.any_enabled and request_payload:
             pipeline_result = app.state.pipeline.apply(
                 request_payload,
-                {"request_analysis": asdict(original_analysis)},
+                {
+                    "request_analysis": asdict(original_analysis),
+                    "session_id": session_id,
+                },
             )
             forwarded_payload = pipeline_result.request
             optimizations_applied = pipeline_result.applied
@@ -89,7 +102,6 @@ def create_app(
             original_analysis.tokens_total_input
             - forwarded_analysis.tokens_total_input,
         )
-        session_id = request.headers.get("x-agentwarden-session", "default")
         upstream_client = httpx.AsyncClient(
             follow_redirects=False,
             timeout=httpx.Timeout(

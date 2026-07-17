@@ -1,11 +1,10 @@
-"""Interfaces for future request optimizer passes.
-
-No optimizer is implemented or enabled in the Day 1 milestone.
-"""
+"""Interfaces and installed request optimizer passes."""
 
 from __future__ import annotations
 
 from typing import Any, Mapping, Protocol
+
+from proxy.optimizers.tool_prune import ToolPruneOptimizer
 
 
 class Optimizer(Protocol):
@@ -20,3 +19,5 @@ class Optimizer(Protocol):
     ) -> dict[str, Any]:
         """Return an optimized request or raise for pipeline fallback."""
 
+
+__all__ = ["Optimizer", "ToolPruneOptimizer"]

@@ -63,6 +63,7 @@ class Settings:
     database_path: Path = Path("agentwarden.sqlite3")
     request_timeout_seconds: float = 120.0
     optimizer_flags: OptimizerFlags = field(default_factory=OptimizerFlags)
+    tool_prune_warmup_requests: int = 3
     model_prices: Mapping[str, ModelPrice] = field(
         default_factory=lambda: dict(DEFAULT_MODEL_PRICES)
     )
@@ -75,6 +76,15 @@ class Settings:
             ).rstrip("/"),
             database_path=Path(
                 os.environ.get("AGENTWARDEN_DB_PATH", "agentwarden.sqlite3")
+            ),
+            optimizer_flags=OptimizerFlags(
+                tool_prune=_env_flag("AGENTWARDEN_ENABLE_TOOL_PRUNE"),
+                history_trim=_env_flag("AGENTWARDEN_ENABLE_HISTORY_TRIM"),
+                context_dedup=_env_flag("AGENTWARDEN_ENABLE_CONTEXT_DEDUP"),
+                cache_order=_env_flag("AGENTWARDEN_ENABLE_CACHE_ORDER"),
+            ),
+            tool_prune_warmup_requests=_env_int(
+                "AGENTWARDEN_TOOL_PRUNE_WARMUP_REQUESTS", default=3
             ),
         )
 
@@ -89,3 +99,19 @@ class Settings:
             return self.model_prices.get("-".join(parts[:-3]))
         return None
 
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _env_int(name: str, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default

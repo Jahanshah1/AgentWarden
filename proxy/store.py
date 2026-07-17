@@ -114,6 +114,31 @@ class TraceStore:
             ).fetchall()
         return [self._deserialize_row(row) for row in rows]
 
+    def count_requests(self, session_id: str) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT COUNT(*) AS request_count FROM traces WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+        return int(row["request_count"]) if row is not None else 0
+
+    def list_called_tools(self, session_id: str) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT tools_called FROM traces WHERE session_id = ? ORDER BY id ASC",
+                (session_id,),
+            ).fetchall()
+
+        seen: set[str] = set()
+        result: list[str] = []
+        for row in rows:
+            for tool_name in json.loads(row["tools_called"]):
+                if not isinstance(tool_name, str) or tool_name in seen:
+                    continue
+                seen.add(tool_name)
+                result.append(tool_name)
+        return result
+
     def get_stats(
         self,
         session_id: str,
