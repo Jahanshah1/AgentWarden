@@ -6,6 +6,7 @@ import asyncio
 import gzip
 import json
 import os
+import re
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -313,9 +314,16 @@ def test_bundled_dashboard_is_served_by_the_proxy(tmp_path: Any) -> None:
             transport=httpx.ASGITransport(app=proxy_app), base_url="http://agentwarden"
         ) as client:
             response = await client.get("/dashboard/")
+            stylesheet_match = re.search(
+                rb'href="(/dashboard/_next/static/css/[^"]+\.css)"', response.content
+            )
+            assert stylesheet_match is not None
+            stylesheet = await client.get(stylesheet_match.group(1).decode())
 
         assert response.status_code == 200
         assert b"AgentWarden" in response.content
+        assert stylesheet.status_code == 200
+        assert b"app-shell" in stylesheet.content
 
     asyncio.run(run())
 
