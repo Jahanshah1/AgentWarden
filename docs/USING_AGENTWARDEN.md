@@ -92,6 +92,7 @@ agentwarden dashboard
 | `agentwarden doctor` | Checks a running proxy and prints the SDK base URL. |
 | `agentwarden stats --session-id NAME` | Prints totals, segments, savings, and estimated cost. |
 | `agentwarden demo` | Runs the packaged coding demo through a running proxy. It makes real OpenAI calls. |
+| `agentwarden lead-demo` | Runs the packaged deterministic lead-enrichment demo through a running proxy. It makes real OpenAI calls. |
 | `agentwarden verify` | Runs that coding task with optimizations off and on. It makes real OpenAI calls. |
 | `agentwarden verify --no-judge` | Runs the same A/B test but skips only the extra answer-similarity judge call. |
 
@@ -156,6 +157,17 @@ agentwarden stats --session-id lead-optimized
 
 Compare input tokens, cost estimate, tool calls, and the business result. For
 a lead agent, compare saved leads, scores, and outreach drafts, not only text.
+
+The packaged lead agent gives a ready-made controlled workflow:
+
+```bash
+agentwarden lead-demo --session-id lead-baseline
+```
+
+It offers 15 tools: seven required enrichment tools and eight decoys. Its task
+explicitly names the required tools, so tool pruning can remove only decoys
+after warm-up. Run it once with optimizers off and once with them on using a
+new session ID, then compare the dashboard receipts.
 
 ## Troubleshooting
 

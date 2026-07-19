@@ -63,7 +63,7 @@ Before launch day, record one clean receipt from a support or lead-style agent, 
 7. Show the verifier result or matched workflow outcome.
 8. Close with the one-line adoption change: local `base_url`.
 
-For a lead agent, use deterministic local CRM/prospect fixtures. The goal is to prove context reduction; live scraping noise makes the proof weaker.
+For a lead agent, use deterministic local CRM/prospect fixtures. The packaged `agentwarden lead-demo` now provides this workflow: seven required enrichment tools, eight decoys, saved-lead/outreach output, and an outcome check. The goal is to prove context reduction; live scraping noise makes the proof weaker.
 
 ## Hackathon Submission
 

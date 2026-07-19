@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentwarden-ai"
-version = "0.1.3"
+version = "0.1.4"
 description = "A local OpenAI-compatible proxy that reduces agent context waste and proves behavior held."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,7 +49,7 @@ markers = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["proxy*", "demo_agent*", "replay*"]
+include = ["proxy*", "demo_agent*", "lead_agent*", "replay*"]
 
 [tool.setuptools.package-data]
 proxy = ["dashboard_static/**/*"]

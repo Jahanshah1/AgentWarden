@@ -11,6 +11,8 @@ import httpx
 import uvicorn
 
 from demo_agent.agent import DEFAULT_MODEL, DEFAULT_TASK, run_demo_task
+from lead_agent.agent import DEFAULT_MODEL as LEAD_DEFAULT_MODEL
+from lead_agent.agent import run_lead_task
 from proxy.config import Settings
 from proxy.store import TraceStore
 from replay.verify import verify_demo_task
@@ -54,6 +56,16 @@ def main() -> int:
     verify.add_argument("--task", default=os.environ.get("AGENTWARDEN_TASK"))
     verify.add_argument("--no-judge", action="store_true")
 
+    lead_demo = subparsers.add_parser(
+        "lead-demo", help="Run the deterministic lead-enrichment demo through a proxy"
+    )
+    lead_demo.add_argument(
+        "--base-url", default=os.environ.get("AGENTWARDEN_BASE_URL", "http://127.0.0.1:8080/v1")
+    )
+    lead_demo.add_argument("--model", default=os.environ.get("AGENTWARDEN_MODEL", LEAD_DEFAULT_MODEL))
+    lead_demo.add_argument("--session-id", default=None)
+    lead_demo.add_argument("--max-steps", type=int, default=16)
+
     args = parser.parse_args()
     if args.command == "serve":
         uvicorn.run("proxy.server:app", host=args.host, port=args.port)
@@ -89,6 +101,16 @@ def main() -> int:
             include_judge=not args.no_judge,
         )
         print(json.dumps(report.to_dict(), indent=2))
+        return 0
+    if args.command == "lead-demo":
+        result = run_lead_task(
+            api_key=_require_api_key(),
+            base_url=args.base_url,
+            model=args.model,
+            session_id=args.session_id,
+            max_steps=args.max_steps,
+        )
+        print(json.dumps(result.to_dict(), indent=2))
         return 0
     raise AssertionError("unreachable")
 
