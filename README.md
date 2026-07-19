@@ -1,5 +1,5 @@
 # AgentWarden
-<img width="1254" height="1254" alt="logowarden" src="https://github.com/user-attachments/assets/6a2290fd-0aac-4e6e-aaf6-71cdde7c0d41" />
+<img width="365" height="365" alt="logowarden" src="https://github.com/user-attachments/assets/6a2290fd-0aac-4e6e-aaf6-71cdde7c0d41" />
 
 
 AgentWarden is a local, OpenAI-compatible proxy for tool-using agents. It
