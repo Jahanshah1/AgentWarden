@@ -176,7 +176,12 @@ for durable defaults.
 
 ## Current status
 
-This is a working hackathon prototype, not a hosted multi-tenant service. It
-is designed to run locally beside one developer's agent. Before a broad public
-release, the next work is the dashboard, packaged releases on PyPI, stronger
-live replay coverage, and support for the Responses API.
+AgentWarden is a working local alpha, published on PyPI as `agentwarden-ai`.
+It is designed to run beside one developer's agent, rather than as a hosted
+multi-tenant service. Current limits include OpenAI Chat Completions only;
+the Responses API and non-OpenAI providers are not yet supported.
+
+See the [user guide](docs/USING_AGENTWARDEN.md) for installation, sessions,
+dashboard controls, verification, and troubleshooting. The
+[launch playbook](docs/GTM_AND_LAUNCH.md) covers the public site, hackathon
+submission, Product Hunt, and post-launch distribution.
