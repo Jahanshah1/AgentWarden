@@ -139,17 +139,6 @@ To run the complete coding-agent demo and then inspect its receipt:
 For a separate consumer-agent proof that imports only the OpenAI SDK, run the
 [independent support-agent example](examples/independent_agent/README.md).
 
-For a deterministic lead-enrichment workflow with useful tools and realistic
-decoys, point a running proxy at the packaged lead demo:
-
-```bash
-.venv/bin/agentwarden lead-demo --session-id lead-baseline
-```
-
-Run it once with optimizers off, then enable them and run it again with a new
-session ID such as `lead-optimized`. The JSON output includes saved leads,
-outreach drafts, tool calls, model token usage, and an outcome check.
-
 To compare the same demo task with optimizations off and on:
 
 ```bash

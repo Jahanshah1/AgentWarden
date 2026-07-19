@@ -12,4 +12,3 @@
 2026-07-18: The public website deploys separately to Vercel; the local dashboard is bundled inside the Python package and served by the proxy at `/dashboard`.
 2026-07-19: The packaged replay demo includes pytest and explicitly names its essential coding tools so verification does not mistake a delayed necessary tool for a removable decoy.
 2026-07-19: Each replay verifier run uses new temporary SQLite databases, preventing prior traces from changing either side of an A/B comparison.
-2026-07-19: The lead-enrichment demo uses deterministic local fixture data and names all necessary tools in its task so it can measure decoy-schema removal without making a live data provider part of the proof.
