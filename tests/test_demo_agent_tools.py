@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from demo_agent.agent import DEFAULT_TASK
 from demo_agent.tools import DECOY_TOOLS, DemoToolbox
 
 
@@ -12,6 +13,11 @@ def test_tool_catalog_contains_real_tools_and_decoys() -> None:
     tool_names = [tool["function"]["name"] for tool in DemoToolbox.openai_tools()]
     assert tool_names[:5] == ["list_dir", "read_file", "write_file", "grep", "run_tests"]
     assert list(DECOY_TOOLS) == tool_names[5:]
+
+
+def test_default_demo_task_retains_required_coding_tools() -> None:
+    for tool_name in ("list_dir", "read_file", "grep", "write_file", "run_tests"):
+        assert tool_name in DEFAULT_TASK
 
 
 def test_run_tests_reports_the_intentionally_broken_fixture_repo() -> None:

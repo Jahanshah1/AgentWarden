@@ -15,7 +15,10 @@ from openai import OpenAI
 from demo_agent.tools import DemoToolbox, ToolResult
 
 
-DEFAULT_TASK = "Inspect the repository, fix the bugs, and make all tests pass."
+DEFAULT_TASK = (
+    "Inspect the repository, fix the bugs, and make all tests pass. "
+    "Use list_dir, read_file, grep, write_file, and run_tests as needed."
+)
 DEFAULT_MODEL = "gpt-5.6-terra"
 SAMPLE_REPO = Path(__file__).resolve().parent / "sample_repo"
 
