@@ -9,6 +9,7 @@ from pathlib import Path
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any
 
@@ -42,69 +43,67 @@ def verify_demo_task(
 ) -> ReplayReport:
     off_port = _free_port()
     on_port = _free_port()
-    off_process = _launch_proxy(
-        off_port,
-        {
-            "AGENTWARDEN_ENABLE_TOOL_PRUNE": "false",
-            "AGENTWARDEN_ENABLE_HISTORY_TRIM": "false",
-            "AGENTWARDEN_ENABLE_CONTEXT_DEDUP": "false",
-            "AGENTWARDEN_ENABLE_CACHE_ORDER": "false",
-            "AGENTWARDEN_DB_PATH": str(_db_path("off")),
-        },
-    )
-    on_process = _launch_proxy(
-        on_port,
-        {
-            "AGENTWARDEN_ENABLE_TOOL_PRUNE": "true",
-            "AGENTWARDEN_ENABLE_HISTORY_TRIM": "true",
-            "AGENTWARDEN_ENABLE_CONTEXT_DEDUP": "true",
-            "AGENTWARDEN_ENABLE_CACHE_ORDER": "true",
-            "AGENTWARDEN_SESSION_BUDGET_USD": "0.02",
-            "AGENTWARDEN_DB_PATH": str(_db_path("on")),
-        },
-    )
-    try:
-        off_run = run_demo_task(
-            api_key=api_key,
-            base_url=f"http://127.0.0.1:{off_port}/v1",
-            model=model,
-            task=task,
-            session_id="verify-off",
-            workspace_parent=workspace_parent,
+    with tempfile.TemporaryDirectory(prefix="agentwarden-verify-") as directory:
+        database_dir = Path(directory)
+        off_process = _launch_proxy(
+            off_port,
+            {
+                "AGENTWARDEN_ENABLE_TOOL_PRUNE": "false",
+                "AGENTWARDEN_ENABLE_HISTORY_TRIM": "false",
+                "AGENTWARDEN_ENABLE_CONTEXT_DEDUP": "false",
+                "AGENTWARDEN_ENABLE_CACHE_ORDER": "false",
+                "AGENTWARDEN_DB_PATH": str(database_dir / "off.sqlite3"),
+            },
         )
-        on_run = run_demo_task(
-            api_key=api_key,
-            base_url=f"http://127.0.0.1:{on_port}/v1",
-            model=model,
-            task=task,
-            session_id="verify-on",
-            workspace_parent=workspace_parent,
+        on_process = _launch_proxy(
+            on_port,
+            {
+                "AGENTWARDEN_ENABLE_TOOL_PRUNE": "true",
+                "AGENTWARDEN_ENABLE_HISTORY_TRIM": "true",
+                "AGENTWARDEN_ENABLE_CONTEXT_DEDUP": "true",
+                "AGENTWARDEN_ENABLE_CACHE_ORDER": "true",
+                "AGENTWARDEN_SESSION_BUDGET_USD": "0.02",
+                "AGENTWARDEN_DB_PATH": str(database_dir / "on.sqlite3"),
+            },
         )
-        off_stats = _get_json(f"http://127.0.0.1:{off_port}/stats", {"session_id": "verify-off"})
-        on_stats = _get_json(f"http://127.0.0.1:{on_port}/stats", {"session_id": "verify-on"})
-        off_traces = _get_json(
-            f"http://127.0.0.1:{off_port}/traces", {"session_id": "verify-off"}
-        )
-        on_traces = _get_json(
-            f"http://127.0.0.1:{on_port}/traces", {"session_id": "verify-on"}
-        )
-        similarity = None
-        if include_judge:
-            similarity = _judge_similarity(api_key, model, off_run.final_message, on_run.final_message)
-        return ReplayReport(
-            off_run=off_run.to_dict(),
-            on_run=on_run.to_dict(),
-            off_stats=off_stats,
-            on_stats=on_stats,
-            tool_call_sequence_match=_tool_sequence(off_traces) == _tool_sequence(on_traces),
-            tests_passed_match=off_run.tests_passed == on_run.tests_passed,
-            answer_similarity=similarity,
-        )
-    finally:
-        off_process.terminate()
-        on_process.terminate()
-        off_process.wait(timeout=5)
-        on_process.wait(timeout=5)
+        try:
+            off_run = run_demo_task(
+                api_key=api_key,
+                base_url=f"http://127.0.0.1:{off_port}/v1",
+                model=model,
+                task=task,
+                session_id="verify-off",
+                workspace_parent=workspace_parent,
+            )
+            on_run = run_demo_task(
+                api_key=api_key,
+                base_url=f"http://127.0.0.1:{on_port}/v1",
+                model=model,
+                task=task,
+                session_id="verify-on",
+                workspace_parent=workspace_parent,
+            )
+            off_stats = _get_json(f"http://127.0.0.1:{off_port}/stats", {"session_id": "verify-off"})
+            on_stats = _get_json(f"http://127.0.0.1:{on_port}/stats", {"session_id": "verify-on"})
+            off_traces = _get_json(f"http://127.0.0.1:{off_port}/traces", {"session_id": "verify-off"})
+            on_traces = _get_json(f"http://127.0.0.1:{on_port}/traces", {"session_id": "verify-on"})
+            similarity = None
+            if include_judge:
+                similarity = _judge_similarity(api_key, model, off_run.final_message, on_run.final_message)
+            return ReplayReport(
+                off_run=off_run.to_dict(),
+                on_run=on_run.to_dict(),
+                off_stats=off_stats,
+                on_stats=on_stats,
+                tool_call_sequence_match=_tool_sequence(off_traces) == _tool_sequence(on_traces),
+                tests_passed_match=off_run.tests_passed == on_run.tests_passed,
+                answer_similarity=similarity,
+            )
+        finally:
+            off_process.terminate()
+            on_process.terminate()
+            off_process.wait(timeout=5)
+            on_process.wait(timeout=5)
 
 
 def _launch_proxy(port: int, extra_env: dict[str, str]) -> subprocess.Popen[str]:
@@ -197,10 +196,6 @@ def _judge_similarity(
     except json.JSONDecodeError:
         return {"verdict": "unparseable", "raw": content}
     return payload if isinstance(payload, dict) else {"verdict": "invalid_payload", "raw": payload}
-
-
-def _db_path(name: str) -> Path:
-    return Path(__file__).resolve().parents[1] / f"agentwarden-{name}.sqlite3"
 
 
 def _free_port() -> int:

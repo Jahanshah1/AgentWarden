@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import uvicorn
 
-from demo_agent.agent import DEFAULT_MODEL, run_demo_task
+from demo_agent.agent import DEFAULT_MODEL, DEFAULT_TASK, run_demo_task
 from proxy.config import Settings
 from proxy.store import TraceStore
 from replay.verify import verify_demo_task
@@ -75,7 +75,7 @@ def main() -> int:
             api_key=api_key,
             base_url=args.base_url,
             model=args.model,
-            task=args.task or "Inspect the repository, fix the bugs, and make all tests pass.",
+            task=args.task or DEFAULT_TASK,
             session_id=args.session_id,
         )
         print(json.dumps(result.to_dict(), indent=2))
@@ -85,7 +85,7 @@ def main() -> int:
         report = verify_demo_task(
             api_key=api_key,
             model=args.model,
-            task=args.task or "Inspect the repository, fix the bugs, and make all tests pass.",
+            task=args.task or DEFAULT_TASK,
             include_judge=not args.no_judge,
         )
         print(json.dumps(report.to_dict(), indent=2))
