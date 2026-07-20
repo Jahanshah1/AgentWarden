@@ -70,7 +70,7 @@ reduce input cost by roughly **16-50%**, depending on the toolset and context.
 This is a workload-dependent range, not a guaranteed result. Always use the
 local receipt and replay verifier to measure your own agent.
 
-<img alt="AgentWarden before and after receipt showing input context reduced by 8.8 percent" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/tokens-saved.png" />
+<img alt="AgentWarden before and after receipt showing input context reduced by 13.8 percent" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/tokens-saved.png" />
 
 ## The four optimizers
 

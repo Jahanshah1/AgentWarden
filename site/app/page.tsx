@@ -74,7 +74,7 @@ export default function Home() {
             </div>
           </div>
           <figure className="product-shot savings-shot">
-            <img src="/screenshots/tokens-saved.png" alt="AgentWarden before and after context receipt showing 8.8 percent reduction" />
+            <img src="/screenshots/tokens-saved.png" alt="AgentWarden before and after context receipt showing 13.8 percent reduction" />
             <figcaption>Controlled lead-enrichment workflow. Savings depend on repeated agent context.</figcaption>
           </figure>
         </div>
