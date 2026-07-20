@@ -10,6 +10,16 @@
 
 > AgentWarden is a local, OpenAI-compatible proxy that tracks and reduces repeated context sent by tool-using agents. Your API key stays in your own agent process.
 
+> ### Built with Codex and GPT-5.6
+> AgentWarden was built during OpenAI Build Week by Jahan Shah, with Codex and
+> GPT-5.6 as major collaborators throughout the project. The vast majority of
+> the proxy, optimizer pipeline, tests, local dashboard, PyPI package,
+> documentation, and public site were created and iterated with Codex.
+>
+> **A huge thank you to OpenAI and OpenAI Build Week for the complimentary
+> Codex credits.** They made the extended build, testing, packaging, and polish
+> cycle behind this project possible.
+
 ## Start here
 
 ### Important: turn the optimizers on
@@ -165,19 +175,6 @@ python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 .venv/bin/pytest -m 'not live' -q
 ```
-
-## Built with Codex and GPT-5.6
-
-AgentWarden was built during OpenAI Build Week by Jahan Shah in collaboration
-with Codex and GPT-5.6. Codex accelerated implementation and iteration across
-the OpenAI-compatible streaming proxy, deterministic optimizer pipeline,
-pytest coverage, local dashboard, PyPI packaging, and the public site. Jahan
-defined the product direction, reviewed implementation choices, and ran the
-real agent workflows used for the receipts shown above.
-
-The project keeps the build story inspectable: the repository includes the
-tests, demo agent, release workflow, design decisions, and documentation used
-to get from the core proxy to the packaged product.
 
 ## Verify the project from a clone
 
