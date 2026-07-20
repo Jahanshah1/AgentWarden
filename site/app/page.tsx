@@ -164,7 +164,7 @@ export default function Home() {
       <section className="creator-section">
         <div className="container creator-layout">
           <img className="creator-logo" src="/screenshots/logoward.png" alt="AgentWarden logo" />
-          <div><p className="kicker">Independent and open source</p><h2>Created by <em>Jahan Shah.</em></h2><p>Built for developers who want their agents to stay capable while becoming meaningfully easier to understand and afford.</p></div>
+          <div><p className="kicker">Independent and open source</p><h2>Created by <em>Jahan Shah.</em></h2><p>Built during OpenAI Build Week with Codex and GPT-5.6, for developers who want their agents to stay capable while becoming meaningfully easier to understand and afford.</p></div>
           <a className="button dark" href={repoUrl} target="_blank" rel="noreferrer"><Github size={18} /> View the project <ArrowRight size={16} /></a>
         </div>
       </section>

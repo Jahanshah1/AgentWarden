@@ -16,3 +16,4 @@ agentwarden.sqlite3
 .env
 .env.*
 Apikey.txt
+.DS_Store

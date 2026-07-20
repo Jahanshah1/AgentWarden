@@ -1,7 +1,11 @@
 # AgentWarden
 
+[![PyPI](https://img.shields.io/pypi/v/agentwarden-ai?label=PyPI)](https://pypi.org/project/agentwarden-ai/)
+[![Python](https://img.shields.io/pypi/pyversions/agentwarden-ai?label=Python)](https://pypi.org/project/agentwarden-ai/)
+[![License](https://img.shields.io/badge/license-MIT-4f7d3a)](LICENSE)
+
 <p align="center">
-  <img width="150" alt="AgentWarden logo" src="site/public/screenshots/logoward.png" />
+  <img width="150" alt="AgentWarden logo" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/logoward.png" />
 </p>
 
 > AgentWarden is a local, OpenAI-compatible proxy that tracks and reduces repeated context sent by tool-using agents. Your API key stays in your own agent process.
@@ -14,7 +18,7 @@
 top-right **settings** button, enable the four toggles, and press **Apply
 settings**. They apply immediately to the running local proxy.
 
-<img alt="AgentWarden optimizer settings with Tool Prune, History Trim, Context Dedup, and Cache Order toggles" src="site/public/screenshots/tools.png" />
+<img alt="AgentWarden optimizer settings with Tool Prune, History Trim, Context Dedup, and Cache Order toggles" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/tools.png" />
 
 The controls reset when the proxy stops. For durable defaults, use the
 environment variables in [Configuration](#configuration).
@@ -66,7 +70,7 @@ reduce input cost by roughly **16-50%**, depending on the toolset and context.
 This is a workload-dependent range, not a guaranteed result. Always use the
 local receipt and replay verifier to measure your own agent.
 
-<img alt="AgentWarden before and after receipt showing input context reduced by 8.8 percent" src="site/public/screenshots/tokens-saved.png" />
+<img alt="AgentWarden before and after receipt showing input context reduced by 8.8 percent" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/tokens-saved.png" />
 
 ## The four optimizers
 
@@ -85,7 +89,7 @@ byte-identical pass-through proxy.
 The dashboard is the simplest way to inspect a session. It is local and bundled
 with the Python package; no Node.js or separate frontend server is required.
 
-<img alt="AgentWarden local dashboard showing savings, token anatomy, and trace evidence" src="site/public/screenshots/dashboard.png" />
+<img alt="AgentWarden local dashboard showing savings, token anatomy, and trace evidence" src="https://raw.githubusercontent.com/Jahanshah1/AgentWarden/main/site/public/screenshots/dashboard.png" />
 
 For a stable receipt per agent run, optionally send a session header:
 
@@ -136,6 +140,44 @@ agentwarden doctor                    # check that the local proxy is reachable
 agentwarden stats --session-id NAME   # print a session receipt
 agentwarden verify --no-judge         # compare the demo workflow with optimizers off vs. on
 ```
+
+## Judge and contributor test path
+
+AgentWarden is installable directly from PyPI; no frontend build is required:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install agentwarden-ai
+agentwarden dashboard
+```
+
+Open `http://127.0.0.1:8080/dashboard`, enable the optimizer toggles, and
+point an OpenAI Chat Completions client at `http://127.0.0.1:8080/v1`.
+Live requests require the tester's own `OPENAI_API_KEY` and OpenAI API quota.
+
+To run the repository's offline test suite instead:
+
+```bash
+git clone https://github.com/Jahanshah1/AgentWarden.git
+cd AgentWarden
+python3.11 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+.venv/bin/pytest -m 'not live' -q
+```
+
+## Built with Codex and GPT-5.6
+
+AgentWarden was built during OpenAI Build Week by Jahan Shah in collaboration
+with Codex and GPT-5.6. Codex accelerated implementation and iteration across
+the OpenAI-compatible streaming proxy, deterministic optimizer pipeline,
+pytest coverage, local dashboard, PyPI packaging, and the public site. Jahan
+defined the product direction, reviewed implementation choices, and ran the
+real agent workflows used for the receipts shown above.
+
+The project keeps the build story inspectable: the repository includes the
+tests, demo agent, release workflow, design decisions, and documentation used
+to get from the core proxy to the packaged product.
 
 ## Verify the project from a clone
 
