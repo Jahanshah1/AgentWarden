@@ -28,6 +28,7 @@ export default function Home() {
           <div className="nav-links">
             <a href="#proof">Proof</a>
             <a href="#anatomy">Token anatomy</a>
+            <a href="#optimizers">Optimizers</a>
             <a href="#dashboard">Dashboard</a>
           </div>
           <a className="nav-github" href={repoUrl} target="_blank" rel="noreferrer">
@@ -77,6 +78,28 @@ export default function Home() {
             <figcaption>Controlled lead-enrichment workflow. Savings depend on repeated agent context.</figcaption>
           </figure>
         </div>
+      </section>
+
+      <section className="optimizer-section" id="optimizers">
+        <div className="container optimizer-layout">
+          <div className="section-heading optimizer-copy">
+            <p className="kicker">Turn them on</p>
+            <h2>Four conservative passes. <em>Opt in explicitly.</em></h2>
+            <p className="section-copy">Every optimizer starts off. Open the dashboard settings button, enable the passes you want, then apply them to the running local proxy. The settings reset when the proxy stops, so use environment variables when you want durable defaults.</p>
+            <p className="savings-callout"><strong>Longer agent loops create more opportunity.</strong> Tool Prune learns from the session after three unchanged warm-up requests. In tool-heavy workflows, 10-15+ requests can reduce input cost by roughly 16-50%, depending on repeated tools and history.</p>
+          </div>
+          <figure className="product-shot tools-shot">
+            <img src="/screenshots/tools.png" alt="AgentWarden dashboard optimizer settings with four toggles" />
+            <figcaption>Open settings in the local dashboard, enable the toggles, then apply them.</figcaption>
+          </figure>
+        </div>
+        <div className="container optimizer-grid">
+          <Optimizer title="Tool Prune" text="After three warm-up requests, removes unused tool schemas while retaining tools already called or named in the current request." />
+          <Optimizer title="History Trim" text="Keeps recent turns intact and clips older tool-result messages that no longer need full detail." />
+          <Optimizer title="Context Dedup" text="Replaces repeated history blocks with a deterministic reference to the original content." />
+          <Optimizer title="Cache Order" text="Stabilizes the system-and-tools prefix so provider prompt caching has a better chance to apply." />
+        </div>
+        <p className="container optimizer-disclaimer">The 16-50% range is a workload-dependent potential, not a guarantee. Your local receipt shows the actual result for each session.</p>
       </section>
 
       <section className="anatomy-section" id="anatomy">
@@ -153,4 +176,8 @@ export default function Home() {
 
 function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return <article><div>{icon}</div><span><h3>{title}</h3><p>{text}</p></span></article>;
+}
+
+function Optimizer({ title, text }: { title: string; text: string }) {
+  return <article><span>Opt-in pass</span><h3>{title}</h3><p>{text}</p></article>;
 }

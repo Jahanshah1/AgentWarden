@@ -1,101 +1,93 @@
 # AgentWarden
-<img width="200" height="200" alt="logowarden" src="https://github.com/user-attachments/assets/6a2290fd-0aac-4e6e-aaf6-71cdde7c0d41" />
 
+<p align="center">
+  <img width="150" alt="AgentWarden logo" src="site/public/screenshots/logoward.png" />
+</p>
 
-AgentWarden is a local, OpenAI-compatible proxy for tool-using agents. It
-measures where each request spends input tokens, removes conservative dead
-weight from long-running conversations, and keeps a per-session savings
-receipt in SQLite.
+> AgentWarden is a local, OpenAI-compatible proxy that tracks and reduces repeated context sent by tool-using agents. Your API key stays in your own agent process.
 
-> Observability tools show you the bill. AgentWarden shrinks it and proves
-> nothing broke.
+## Start here
 
-## What works today
+### Important: turn the optimizers on
 
-- Transparent `/v1/chat/completions` proxy for OpenAI, including streaming.
-- Per-request tracing: system prompt, tool schemas, conversation history, and
-  current turn token counts.
-- Independently enabled optimizers: unused tool pruning, old tool-output
-  trimming, duplicate-history removal, and stable static-prefix ordering.
-- Per-session budget warning, local SQLite traces, a demo coding agent, and a
-  replay verifier that compares optimizations off versus on.
+**Every optimizer is off by default.** After starting the dashboard, open the
+top-right **settings** button, enable the four toggles, and press **Apply
+settings**. They apply immediately to the running local proxy.
 
-It supports applications that use the **Chat Completions** API. The proxy is
-language-neutral: a Python, Node.js, or other HTTP client can use it. The
-current v1 does not yet proxy OpenAI's `/v1/responses` endpoint or other model
-providers.
+<img alt="AgentWarden optimizer settings with Tool Prune, History Trim, Context Dedup, and Cache Order toggles" src="site/public/screenshots/tools.png" />
 
-## Quick start
+The controls reset when the proxy stops. For durable defaults, use the
+environment variables in [Configuration](#configuration).
 
-Requirements: Python 3.11+ and an OpenAI API key. Your key stays in your
-application process and is forwarded directly to OpenAI; AgentWarden does not
-persist it.
+### 1. Install and start
 
-Install from PyPI:
+Requirements: Python 3.11+ and an OpenAI API key.
 
 ```bash
 python3.11 -m venv .venv
-.venv/bin/pip install agentwarden-ai
+source .venv/bin/activate
+pip install agentwarden-ai
+agentwarden dashboard
 ```
 
-Until the first PyPI release is published, install the current GitHub version
-instead:
+This starts your local proxy and dashboard at
+[http://127.0.0.1:8080/dashboard](http://127.0.0.1:8080/dashboard).
 
-```bash
-.venv/bin/pip install "git+https://github.com/Jahanshah1/AgentWarden.git"
-```
+### 2. Change one line in your agent
 
-Start the proxy with all current optimizers enabled:
-
-```bash
-export AGENTWARDEN_ENABLE_TOOL_PRUNE=true
-export AGENTWARDEN_ENABLE_HISTORY_TRIM=true
-export AGENTWARDEN_ENABLE_CONTEXT_DEDUP=true
-export AGENTWARDEN_ENABLE_CACHE_ORDER=true
-export AGENTWARDEN_SESSION_BUDGET_USD=0.02
-.venv/bin/agentwarden serve
-```
-
-In a second terminal, check it is up:
-
-```bash
-.venv/bin/agentwarden doctor
-```
-
-The proxy listens on `http://127.0.0.1:8080`. Its OpenAI-compatible SDK base
-URL is `http://127.0.0.1:8080/v1`.
-
-## Add it to an existing agent
-
-Keep the agent's `OPENAI_API_KEY` exactly where it already is. Run
-AgentWarden beside the agent, then point the OpenAI client at the local proxy.
-
-Python:
+Keep your API key exactly where it already is. Change only the OpenAI client's
+base URL:
 
 ```python
-import os
-
 from openai import OpenAI
 
 client = OpenAI(
-    api_key=os.environ["OPENAI_API_KEY"],
+    api_key="your-openai-api-key",
     base_url="http://127.0.0.1:8080/v1",
 )
 ```
 
-Node.js:
+Run your agent normally. Then return to the dashboard to see its request
+receipt: input tokens, estimated spend, tools removed, per-segment usage, and
+the optimization passes that ran.
 
-```javascript
-import OpenAI from "openai";
+That is the whole integration. AgentWarden supports OpenAI **Chat
+Completions** clients, including streaming. It does not store API keys.
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: "http://127.0.0.1:8080/v1",
-});
-```
+## How savings grow
 
-For useful per-agent receipts, send a stable session header with each agent
-run. This is optional; without it, traces use the `default` session.
+Tool Prune observes the tools your agent actually calls, keeps the first three
+requests unchanged, then removes unused tool schemas. The other enabled passes
+clean redundant old context deterministically. In other words, AgentWarden has
+more opportunity to help as an agent has a longer, repeated workflow.
+
+For agents with repeated tool schemas and growing history, 10-15+ requests can
+reduce input cost by roughly **16-50%**, depending on the toolset and context.
+This is a workload-dependent range, not a guaranteed result. Always use the
+local receipt and replay verifier to measure your own agent.
+
+<img alt="AgentWarden before and after receipt showing input context reduced by 8.8 percent" src="site/public/screenshots/tokens-saved.png" />
+
+## The four optimizers
+
+| Toggle | What it does |
+| --- | --- |
+| **Tool Prune** | After three warm-up requests, forwards only tools already used in the session or named in the current user request. |
+| **History Trim** | Keeps the latest turns intact and clips older tool-result content. |
+| **Context Dedup** | Replaces repeated history blocks with a deterministic reference to the earlier content. |
+| **Cache Order** | Keeps the system-and-tools prefix stable so provider prompt caching has a better chance to apply. |
+
+Every pass is independently toggleable. With all four off, AgentWarden is a
+byte-identical pass-through proxy.
+
+## Track what is happening
+
+The dashboard is the simplest way to inspect a session. It is local and bundled
+with the Python package; no Node.js or separate frontend server is required.
+
+<img alt="AgentWarden local dashboard showing savings, token anatomy, and trace evidence" src="site/public/screenshots/dashboard.png" />
+
+For a stable receipt per agent run, optionally send a session header:
 
 ```python
 client.chat.completions.create(
@@ -105,16 +97,47 @@ client.chat.completions.create(
 )
 ```
 
-Then inspect the local receipt:
+You can also query the receipt directly:
 
 ```bash
-curl "http://127.0.0.1:8080/stats?session_id=support-agent-run-42"
+agentwarden stats --session-id support-agent-run-42
 curl "http://127.0.0.1:8080/traces?session_id=support-agent-run-42"
 ```
 
-## Verify the project
+## Configuration
 
-For contributors working from a clone:
+Use these before `agentwarden dashboard` or `agentwarden serve` when you want
+the settings to survive a restart:
+
+```bash
+export AGENTWARDEN_ENABLE_TOOL_PRUNE=true
+export AGENTWARDEN_ENABLE_HISTORY_TRIM=true
+export AGENTWARDEN_ENABLE_CONTEXT_DEDUP=true
+export AGENTWARDEN_ENABLE_CACHE_ORDER=true
+export AGENTWARDEN_SESSION_BUDGET_USD=0.02
+agentwarden dashboard
+```
+
+| Variable | Meaning |
+| --- | --- |
+| `AGENTWARDEN_ENABLE_TOOL_PRUNE` | Enable unused tool-schema removal after warm-up. |
+| `AGENTWARDEN_ENABLE_HISTORY_TRIM` | Enable trimming for older tool-result messages. |
+| `AGENTWARDEN_ENABLE_CONTEXT_DEDUP` | Enable repeated-history cleanup. |
+| `AGENTWARDEN_ENABLE_CACHE_ORDER` | Enable stable static-prefix ordering. |
+| `AGENTWARDEN_SESSION_BUDGET_USD` | Add a response warning after projected session spend reaches this amount. |
+| `AGENTWARDEN_DB_PATH` | SQLite receipt location; defaults to `agentwarden.sqlite3`. |
+
+Useful commands:
+
+```bash
+agentwarden dashboard                 # dashboard + proxy on port 8080
+agentwarden serve                     # proxy only on port 8080
+agentwarden doctor                    # check that the local proxy is reachable
+agentwarden stats --session-id NAME   # print a session receipt
+agentwarden verify --no-judge         # compare the demo workflow with optimizers off vs. on
+```
+
+## Verify the project from a clone
 
 ```bash
 python3.11 -m venv .venv
@@ -122,66 +145,22 @@ python3.11 -m venv .venv
 .venv/bin/pytest -m 'not live' -q
 ```
 
-To exercise a real OpenAI API key through the proxy:
+For the end-to-end demo agent:
 
 ```bash
 export OPENAI_API_KEY="your-key"
-.venv/bin/python scripts/smoke.py
-```
-
-To run the complete coding-agent demo and then inspect its receipt:
-
-```bash
 .venv/bin/agentwarden demo
-.venv/bin/agentwarden stats --session-id demo-REPLACE_ME
-```
-
-For a separate consumer-agent proof that imports only the OpenAI SDK, run the
-[independent support-agent example](examples/independent_agent/README.md).
-
-To compare the same demo task with optimizations off and on:
-
-```bash
 .venv/bin/agentwarden verify --no-judge
 ```
 
-## Configuration
+See the [user guide](docs/USING_AGENTWARDEN.md) for troubleshooting and the
+[launch playbook](docs/GTM_AND_LAUNCH.md) for rollout guidance.
 
-All flags default to `false`, preserving byte-identical pass-through.
+## Current scope
 
-| Variable | Meaning |
-| --- | --- |
-| `AGENTWARDEN_ENABLE_TOOL_PRUNE` | After three warm-up requests, sends only previously used or explicitly mentioned tools. |
-| `AGENTWARDEN_ENABLE_HISTORY_TRIM` | Clips old tool-result messages while preserving recent turns. |
-| `AGENTWARDEN_ENABLE_CONTEXT_DEDUP` | Replaces repeated old history content with a deterministic reference. |
-| `AGENTWARDEN_ENABLE_CACHE_ORDER` | Makes the system-and-tools prefix stable to help provider prompt caching. |
-| `AGENTWARDEN_SESSION_BUDGET_USD` | Adds a warning response header after the projected session cost crosses this amount. |
-| `AGENTWARDEN_DB_PATH` | SQLite trace database location; defaults to `agentwarden.sqlite3`. |
+AgentWarden is a local, single-user alpha, published on PyPI as
+[`agentwarden-ai`](https://pypi.org/project/agentwarden-ai/). It currently
+proxies OpenAI Chat Completions only; the Responses API and non-OpenAI
+providers are outside the current scope.
 
-## Dashboard
-
-The dashboard is bundled with the Python package. No Node.js or separate
-frontend server is needed. Start it with:
-
-```bash
-agentwarden dashboard
-```
-
-Open [http://127.0.0.1:8080/dashboard](http://127.0.0.1:8080/dashboard). The
-dashboard can select any recorded session, show before/after input context,
-inspect every request, and change optimizer flags or the budget-warning
-threshold for the currently-running proxy. Runtime changes take effect
-immediately but reset when the proxy is restarted; use environment variables
-for durable defaults.
-
-## Current status
-
-AgentWarden is a working local alpha, published on PyPI as `agentwarden-ai`.
-It is designed to run beside one developer's agent, rather than as a hosted
-multi-tenant service. Current limits include OpenAI Chat Completions only;
-the Responses API and non-OpenAI providers are not yet supported.
-
-See the [user guide](docs/USING_AGENTWARDEN.md) for installation, sessions,
-dashboard controls, verification, and troubleshooting. The
-[launch playbook](docs/GTM_AND_LAUNCH.md) covers the public site, hackathon
-submission, Product Hunt, and post-launch distribution.
+Created by Jahan Shah.
