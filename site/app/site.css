@@ -92,15 +92,15 @@ a { color:inherit; }
   .brand img { width:30px; height:30px; }
   .nav-github { display:grid; place-items:center; width:44px; height:44px; border:1px solid rgba(32,37,45,.26); border-radius:5px; }
   .hero::after { background:rgba(239,248,249,.74); }
-  .hero-layout { gap:30px; padding:43px 0 48px; }
+  .hero-layout { gap:42px; padding:46px 0 56px; }
   .hero h1 { max-width:360px; font-size:46px; line-height:.94; }
-  .hero-body { margin-top:18px; font-size:15px; line-height:1.48; }
-  .hero-kicker { font-size:10px; }
-  .hero-actions { display:grid; grid-template-columns:1fr; gap:9px; margin-top:24px; }
+  .hero-body { margin-top:23px; font-size:15px; line-height:1.48; }
+  .hero-kicker { margin-bottom:17px; font-size:8px; letter-spacing:.07em; }
+  .hero-actions { display:grid; grid-template-columns:1fr; gap:10px; margin-top:29px; }
   .hero-actions .button { width:100%; min-height:48px; }
-  .hero-code { box-shadow:0 12px 28px rgba(34,54,58,.14); }
+  .hero-code { margin-top:2px; box-shadow:0 12px 28px rgba(34,54,58,.14); }
   .hero-code header { padding:11px 14px; }
-  .code-block { padding:14px 15px 8px; }
+  .code-block { margin-bottom:8px; padding:14px 15px 8px; }
   .code-block p { gap:10px; margin-bottom:8px; font-size:11px; }
   .code-caption { margin:12px 15px 7px; }
   .hero-code pre { padding:0 15px; font-size:10px; }
@@ -116,9 +116,9 @@ a { color:inherit; }
   .optimizer-section { padding-bottom:50px; }
   .savings-callout { margin-top:20px; padding:13px 14px; font-size:12px; }
   .optimizer-grid { gap:8px; margin-top:28px; }
-  .optimizer-grid article { min-height:172px; padding:15px; }
-  .optimizer-grid h3 { margin:18px 0 7px; font-size:25px; }
-  .optimizer-grid p { font-size:11px; line-height:1.43; }
+  .optimizer-grid article { min-height:138px; padding:13px; }
+  .optimizer-grid h3 { margin:14px 0 5px; font-size:21px; line-height:.98; }
+  .optimizer-grid p { font-size:10px; line-height:1.38; }
   .optimizer-disclaimer { margin-top:15px; font-size:10px; line-height:1.4; }
 
   .anatomy-list { grid-template-columns:1fr 1fr; gap:9px; margin-top:21px; font-size:11px; }
